@@ -1,4 +1,4 @@
-// #include <elf.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/ptrace.h>
@@ -6,8 +6,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-int launch_program(char *program);
-int attach_to_child(int childPID);
+#include <breakpoint.h>
+#include <gdd.h>
+
+int MAX_INSTRUCTION_LEN = 10;
 
 int main(int argCount, char *args[]) {
 
@@ -27,7 +29,8 @@ int main(int argCount, char *args[]) {
 		launch_program(args[1]);
 	} else {
 		// we're in the parent
-		attach_to_child(result);
+		child_pid = result;
+		debug_child();
 	}
 }
 
@@ -43,17 +46,3 @@ int launch_program(char *program) {
 	printf("Done\n");
 }
 
-int attach_to_child(int childPID) {
-	while (1) {
-		int status;
-		waitpid(childPID, &status, 0);
-		if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
-			printf("Child is stopped. Resuming...\n");
-			ptrace(PTRACE_CONT, childPID, NULL, NULL);
-		} else if (WIFEXITED(status)) {
-			printf("Child exited.\n");
-			printf("Terminating...\n");
-			return 0;
-		}
-	}
-}
