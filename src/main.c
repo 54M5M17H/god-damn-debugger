@@ -6,7 +6,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <breakpoint.h>
 #include <gdd.h>
 
 int MAX_INSTRUCTION_LEN = 10;
@@ -30,7 +29,7 @@ int main(int argCount, char *args[]) {
 	} else {
 		// we're in the parent
 		child_pid = result;
-		debug_child();
+		start_debugger();
 	}
 }
 
@@ -45,4 +44,3 @@ int launch_program(char *program) {
 	}
 	printf("Done\n");
 }
-

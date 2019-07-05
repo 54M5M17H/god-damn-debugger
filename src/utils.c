@@ -1,3 +1,6 @@
+#include <gdd.h>
+#include <stdio.h>
+
 int my_atoi(char *str, int len) {
 	int code = 0;
 
@@ -12,4 +15,9 @@ int my_atoi(char *str, int len) {
 	}
 
 	return code;
+}
+
+// debugging purposes
+void print_word(char *label, word to_print) {
+	printf("%s: 0x%08llx \n", label, to_print);
 }
