@@ -1,3 +1,6 @@
 #!/bin/bash
 
-/gdbugger/dist/gdd /gdbugger/test/test.o
+source ./change_dir.sh
+change_dir
+
+./dist/gdd $(pwd)/test/target.o

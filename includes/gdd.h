@@ -1,7 +1,8 @@
 #include <sys/ptrace.h>
 #include <sys/types.h>
 
-typedef long long unsigned int word;
+typedef unsigned long long int word;
+typedef unsigned long int half_word;
 typedef struct user_regs_struct registers_struct;
 
 pid_t child_pid;

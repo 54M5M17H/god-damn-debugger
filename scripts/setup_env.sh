@@ -9,3 +9,6 @@ export CXX=g++
 
 #install cmake
 apt-get -y install cmake
+
+# TODO: libdwarf: DOWNLOAD, cmake, make, copy over .a & .h
+# TODO: add libdwarf to CMAKE setup

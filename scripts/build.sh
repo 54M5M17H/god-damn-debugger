@@ -27,7 +27,6 @@ clean () {
 
 change_dir
 main $*
+change_dir
 
-# build test file
-cd ../test
-gcc -o test.o test.c
+source ./scripts/build_tests.sh
