@@ -29,16 +29,18 @@ int main(int argCount, char *args[]) {
 	} else {
 		// we're in the parent
 		child_pid = result;
+		collate_all_src_files(args[1]);
 		start_debugger();
 	}
 }
 
 int launch_program(char *program) {
-	ptrace(PTRACE_TRACEME, NULL, NULL, NULL);
+	ptrace(PTRACE_TRACEME, 0, 0, 0);
 
-	char *const args[2] = {program, NULL};
+	// char *const args[2] = {program, NULL};
 	printf("Launching child process: PID %i \n", getpid());
-	int res = execv(program, args);
+	// int res = execv(program, args);
+	int res = execl(program, program, (void *)0);
 	if (res == -1) {
 		perror("exec");
 	}

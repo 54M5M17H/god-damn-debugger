@@ -48,7 +48,7 @@ void set_breakpoint_from_start() {
 	registers_struct *registers = ptrace_get_registers();
 	// breakpoint_addr = registers->rip + 3604;
 	// breakpoint_addr = registers->rip + 0x00000624;
-	breakpoint_addr = registers->rip + 1572;
+	breakpoint_addr = registers->rip + 1670;
 	set_breakpoint_at(breakpoint_addr);
 	free(registers);
 }

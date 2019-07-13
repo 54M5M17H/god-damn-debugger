@@ -1,5 +1,9 @@
+#include "../lib/dwarf.h"
+#include "../lib/libdwarf.h"
+#include <search.h>
 #include <sys/ptrace.h>
 #include <sys/types.h>
+#include <sys/user.h>
 
 typedef unsigned long long int word;
 typedef unsigned long int half_word;
@@ -10,6 +14,30 @@ pid_t child_pid;
 // main.c
 int MAX_INSTRUCTION_LEN;
 int launch_program(char *program);
+
+// debug_info.c
+typedef struct hsearch_data *hash_table;
+typedef struct file_and_line {
+	char *file_name;
+	Dwarf_Unsigned line_number;
+} * File_And_Line;
+hash_table address_to_file_and_line;
+hash_table file_to_file_lines;
+
+hash_table init_hash(hash_table);
+void insert(hash_table hash, char *key, void *val);
+ENTRY *find(hash_table hash, char *key);
+void print_dwarf_err(Dwarf_Error *err, char *label);
+Dwarf_Debug debug_info_init(char *program_path);
+void collate_src_file_info(Dwarf_Debug dbg);
+char *get_src_file_name(Dwarf_Die cu_die);
+struct source_lines_info *get_src_file_lines(Dwarf_Die cu_die);
+Dwarf_Unsigned get_line_number(Dwarf_Line line);
+Dwarf_Addr get_line_address(Dwarf_Line line);
+void collate_all_src_files(char *program);
+char *long_to_hash_key(word num_to_hash);
+
+void dwarf_test();
 
 // debug.c
 int start_debugger();

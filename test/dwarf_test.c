@@ -250,9 +250,9 @@ int main() {
 		return -1;
 	}
 
-	printf("What line and file is address 0x00000609? \n");
+	printf("What line and file is address 0x00400b5c? \n");
 
-	Dwarf_Addr addr = 0x00000609;
+	Dwarf_Addr addr = 0x00400b5c;
 	char *addr_key = l64a(addr + 2);
 
 	ENTRY *found = find(address_to_file_and_line, addr_key);

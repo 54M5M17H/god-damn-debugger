@@ -10,12 +10,44 @@
 bool STARTED = false;
 char *command;
 
+// int start_debugger() {
+// 	int wait_status;
+// 	unsigned icounter = 0;
+// 	printf("debugger started\n");
+
+// 	/* Wait for child to stop on its first instruction */
+// 	waitpid(child_pid, &wait_status, 0);
+
+// 	while (WIFSTOPPED(wait_status) && WSTOPSIG(wait_status) == SIGTRAP) {
+// 		printf("Running\n");
+// 		icounter++;
+// 		registers_struct *regs = ptrace_get_registers();
+// 		ptrace(PTRACE_GETREGS, child_pid, 0, regs);
+// 		unsigned instr = ptrace(PTRACE_PEEKTEXT, child_pid, regs->rip, 0);
+
+// 		printf("icounter = %u.  EIP = 0x%08llx.  instr = 0x%08x\n",
+// 			   icounter, regs->rip, instr);
+// 		/* Make the child execute another instruction */
+// 		if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
+// 			perror("ptrace");
+// 			return -1;
+// 		}
+
+// 		/* Wait for child to stop on its next instruction */
+// 		waitpid(child_pid, &wait_status, 0);
+// 	}
+
+// 	printf("the child executed %u instructions\n", icounter);
+// 	return 0;
+// }
+
 int start_debugger() {
 	command = malloc(sizeof(char) * MAX_INSTRUCTION_LEN);
+	int status;
+	int res;
 
 	while (1) {
-		int status;
-		int res = waitpid(child_pid, &status, 0);
+		res = waitpid(child_pid, &status, 0);
 		if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
 			// printf("Stopped at: DUNNO? \n\n");
 			handle_pause();
@@ -89,6 +121,27 @@ void handle_pause() {
 		// TODO: HANDLE THE CASE WHERE WE ARE ON OR CROSS
 		// A BREAKPOINT AND NEED TO FIX THE INSTRUCTION
 		ptrace_step_forward();
+		// TODO: STEP INSTRUCTION VS STEP LINE
+
+
+		// int res;
+		// int status;
+		// if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
+		// 	perror("ptrace");
+		// 	return;
+		// }
+		// for (int i = 0; i < 150000; i++) {
+		// 	res = waitpid(child_pid, &status, 0);
+		// 	if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
+		// 		if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
+		// 			perror("ptrace");
+		// 			return;
+		// 		}
+		// 	} else {
+		// 		printf("Stopped \n");
+		// 		return;
+		// 	}
+		// }
 		return;
 	}
 

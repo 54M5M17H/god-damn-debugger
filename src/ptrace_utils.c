@@ -1,7 +1,6 @@
 #include <gdd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/user.h>
 
 // TODO: Handle errors from ptrace
 // handle here or with user
@@ -17,8 +16,8 @@ int ptrace_run() {
 
 int ptrace_set_instruction(word address, word instruction) {
 	// replace instruction at address
-	int res = ptrace(PTRACE_POKETEXT, child_pid, (void *)0x69e, (void *)instruction);
-	// int res = ptrace(PTRACE_POKETEXT, child_pid, (void *)address, (void *)instruction);
+	// int res = ptrace(PTRACE_POKETEXT, child_pid, (void *)0x00400b5c, (void *)instruction);
+	int res = ptrace(PTRACE_POKETEXT, child_pid, (void *)address, (void *)instruction);
 	if (res == -1) {
 		perror("Setting instruction");
 	}
@@ -28,8 +27,8 @@ int ptrace_set_instruction(word address, word instruction) {
 word ptrace_get_instruction(word address) {
 	// print_word("address to get", address);
 	// ptrace_print_ip_reg();
-	// word res = ptrace(PTRACE_PEEKTEXT, child_pid, (void *)address, 0);
-	word res = ptrace(PTRACE_PEEKTEXT, child_pid, (void *)0x69e, (void *)0);
+	word res = ptrace(PTRACE_PEEKTEXT, child_pid, (void *)address, 0);
+	// word res = ptrace(PTRACE_PEEKTEXT, child_pid, (void *)0x00400b5c, (void *)0);
 	if (res == -1) {
 		perror("Peeking instruction");
 	}
@@ -46,7 +45,7 @@ int ptrace_step_back() {
 
 int ptrace_step_forward() {
 	int res = ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0);
-	if (res == -1) {
+	if (res != 0) {
 		perror("Step forward");
 	}
 	return res;

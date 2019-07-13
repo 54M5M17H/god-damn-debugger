@@ -8,4 +8,7 @@ target_sources(gdd
 		./src/debug.c
 		./src/utils.c
 		./src/ptrace_utils.c
+		./src/debug_info.c
 )
+
+target_link_libraries(gdd ${CMAKE_SOURCE_DIR}/lib/libdwarf.a)
