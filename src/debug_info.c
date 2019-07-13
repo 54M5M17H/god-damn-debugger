@@ -9,8 +9,6 @@
 
 // TODO: DEALLOC EVERYTHING FROM DWARF -- see docs page 22
 
-hash_table address_to_file_and_line;
-hash_table file_to_file_lines;
 size_t MAX_HASH_SIZE = 100;
 
 struct source_lines_info {
@@ -78,7 +76,7 @@ Dwarf_Debug debug_info_init(char *program_path) {
 		return NULL;
 	}
 
-	// close(fd);
+	// TODO: close(fd); somewhere else
 
 	return dbg;
 };
@@ -152,13 +150,13 @@ Dwarf_Unsigned get_line_number(Dwarf_Line line) {
 	return line_num;
 }
 
-Dwarf_Addr get_line_address(Dwarf_Line line) {
-	Dwarf_Addr line_addr;
+Dwarf_Addr *get_line_address(Dwarf_Line line) {
+	Dwarf_Addr *line_addr = malloc(sizeof(Dwarf_Addr));
 	Dwarf_Error err;
 
 	int res = dwarf_lineaddr(
 		line,
-		&line_addr,
+		line_addr,
 		&err);
 
 	if (res != DW_DLV_OK) {
@@ -192,21 +190,25 @@ void collate_src_file_info(Dwarf_Debug dbg) {
 	insert(file_to_file_lines, file_name, file_line_to_address);
 
 	struct source_lines_info *src_lines = get_src_file_lines(cu_die);
+	printf("File: %s \n", file_name);
 
 	for (int i = 0; i < src_lines->line_count; i++) {
 		Dwarf_Line line = src_lines->lines[i];
 		Dwarf_Unsigned line_num = get_line_number(line);
-		Dwarf_Addr line_addr = get_line_address(line);
+		Dwarf_Addr *line_addr = get_line_address(line);
 
 		char *line_num_key = long_to_hash_key(line_num);
-		char *line_addr_key = long_to_hash_key(line_addr);
+		char *line_addr_key = long_to_hash_key(*line_addr);
 
-		insert(file_line_to_address, line_num_key, &line_addr);
+		insert(file_line_to_address, line_num_key, line_addr);
 
 		File_And_Line fileAndLine = malloc(sizeof(File_And_Line));
 		fileAndLine->line_number = line_num;
 		fileAndLine->file_name = file_name;
 		insert(address_to_file_and_line, line_addr_key, fileAndLine);
+
+		printf("line num is %lli, address is 0x%08llx, addr_key is %s, line_key is %s \n",
+			   line_num, *line_addr, line_addr_key, line_num_key);
 	}
 }
 
@@ -236,8 +238,6 @@ void collate_all_src_files(char *program) {
 			break;
 		}
 
-		printf("res is %i \n", res);
-
 		collate_src_file_info(dbg);
 	}
 
@@ -251,6 +251,7 @@ void collate_all_src_files(char *program) {
 	dwarf_test();
 };
 
+// TODO: REMOVE
 void dwarf_test() {
 	printf("What line and file is address 0x00400b5c? \n");
 

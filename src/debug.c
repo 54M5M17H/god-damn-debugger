@@ -7,39 +7,13 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+int MAX_INSTRUCTION_LEN = 20;
+
+int get_command();
+void parse_breakpoint_command(char *, int, struct file_and_line *);
+
 bool STARTED = false;
 char *command;
-
-// int start_debugger() {
-// 	int wait_status;
-// 	unsigned icounter = 0;
-// 	printf("debugger started\n");
-
-// 	/* Wait for child to stop on its first instruction */
-// 	waitpid(child_pid, &wait_status, 0);
-
-// 	while (WIFSTOPPED(wait_status) && WSTOPSIG(wait_status) == SIGTRAP) {
-// 		printf("Running\n");
-// 		icounter++;
-// 		registers_struct *regs = ptrace_get_registers();
-// 		ptrace(PTRACE_GETREGS, child_pid, 0, regs);
-// 		unsigned instr = ptrace(PTRACE_PEEKTEXT, child_pid, regs->rip, 0);
-
-// 		printf("icounter = %u.  EIP = 0x%08llx.  instr = 0x%08x\n",
-// 			   icounter, regs->rip, instr);
-// 		/* Make the child execute another instruction */
-// 		if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
-// 			perror("ptrace");
-// 			return -1;
-// 		}
-
-// 		/* Wait for child to stop on its next instruction */
-// 		waitpid(child_pid, &wait_status, 0);
-// 	}
-
-// 	printf("the child executed %u instructions\n", icounter);
-// 	return 0;
-// }
 
 int start_debugger() {
 	command = malloc(sizeof(char) * MAX_INSTRUCTION_LEN);
@@ -101,14 +75,19 @@ void handle_pause() {
 		return;
 	}
 
-	if (command[0] == 'b' && command[1] == ' ') {
-
-		int line = my_atoi(&command[2], commandLength - 2);
-		if (line == -1) {
-			printf("Invalid line number: %s \n", &command[2]);
+	if (command[0] == 'b') {
+		if (command[1] != ' ') {
+			printf("Invalid breakpoint command \n");
 			return handle_pause();
 		}
-		set_breakpoint_from_start();
+		File_And_Line file_and_line = malloc(sizeof(File_And_Line));
+		// struct file_and_line *file_and_line;
+		parse_breakpoint_command(&command[2], commandLength - 2, file_and_line);
+		if (file_and_line->line_number == -1) {
+			return handle_pause();
+		}
+
+		set_breakpoint_at(file_and_line);
 		return handle_pause();
 	}
 
@@ -123,25 +102,6 @@ void handle_pause() {
 		ptrace_step_forward();
 		// TODO: STEP INSTRUCTION VS STEP LINE
 
-
-		// int res;
-		// int status;
-		// if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
-		// 	perror("ptrace");
-		// 	return;
-		// }
-		// for (int i = 0; i < 150000; i++) {
-		// 	res = waitpid(child_pid, &status, 0);
-		// 	if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
-		// 		if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
-		// 			perror("ptrace");
-		// 			return;
-		// 		}
-		// 	} else {
-		// 		printf("Stopped \n");
-		// 		return;
-		// 	}
-		// }
 		return;
 	}
 
@@ -159,3 +119,19 @@ int get_command() {
 	}
 	return length;
 }
+
+void parse_breakpoint_command(char *command, int command_length, struct file_and_line *file_and_line) {
+	file_and_line->file_name = strtok(command, " ");
+	char *line_number_ascii = strtok(NULL, " ");
+
+	// printf("Command %s \n", command);
+	// printf("Filename %s \n", file_and_line->file_name);
+	// printf("Line %s \n", line_number_ascii);
+
+	word line_number = my_atoi(line_number_ascii, strlen(line_number_ascii));
+	if (line_number == -1) {
+		printf("Invalid breakpoint command format. Should match 'b FILE_NAME LINE_NUMBER' \n");
+	}
+	// if invalid, this will be - 1
+	file_and_line->line_number = line_number;
+};

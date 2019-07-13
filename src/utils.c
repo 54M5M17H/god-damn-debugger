@@ -1,8 +1,8 @@
 #include <gdd.h>
 #include <stdio.h>
 
-int my_atoi(char *str, int len) {
-	int code = 0;
+word my_atoi(char *str, int len) {
+	word code = 0;
 
 	for (int i = 0; i < len; i++) {
 		if (str[i] < 48 || str[i] > 57) {

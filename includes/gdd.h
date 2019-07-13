@@ -9,18 +9,19 @@ typedef unsigned long long int word;
 typedef unsigned long int half_word;
 typedef struct user_regs_struct registers_struct;
 
-pid_t child_pid;
-
-// main.c
-int MAX_INSTRUCTION_LEN;
-int launch_program(char *program);
-
-// debug_info.c
-typedef struct hsearch_data *hash_table;
 typedef struct file_and_line {
 	char *file_name;
 	Dwarf_Unsigned line_number;
 } * File_And_Line;
+
+pid_t child_pid;
+
+// main.c
+int launch_program(char *program);
+
+// debug_info.c
+typedef struct hsearch_data *hash_table;
+
 hash_table address_to_file_and_line;
 hash_table file_to_file_lines;
 
@@ -33,7 +34,7 @@ void collate_src_file_info(Dwarf_Debug dbg);
 char *get_src_file_name(Dwarf_Die cu_die);
 struct source_lines_info *get_src_file_lines(Dwarf_Die cu_die);
 Dwarf_Unsigned get_line_number(Dwarf_Line line);
-Dwarf_Addr get_line_address(Dwarf_Line line);
+Dwarf_Addr *get_line_address(Dwarf_Line line);
 void collate_all_src_files(char *program);
 char *long_to_hash_key(word num_to_hash);
 
@@ -42,16 +43,15 @@ void dwarf_test();
 // debug.c
 int start_debugger();
 void handle_pause();
-int get_command();
 
 // utils.c
-int my_atoi(char *str, int len);
+word my_atoi(char *str, int len);
 void print_word(char *label, word to_print);
 
 // breakpoint.c
 void set_breakpoint_from_start();
 void breakpoint_continue();
-void set_breakpoint_at(word addr);
+void set_breakpoint_at_address(word addr);
 
 // ptrace_utils.c
 int ptrace_run();

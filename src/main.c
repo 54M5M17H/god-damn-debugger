@@ -8,8 +8,6 @@
 
 #include <gdd.h>
 
-int MAX_INSTRUCTION_LEN = 10;
-
 int main(int argCount, char *args[]) {
 
 	if (argCount <= 1) {

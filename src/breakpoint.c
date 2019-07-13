@@ -9,10 +9,30 @@
 word original_instruction;
 word breakpoint_addr;
 
-void set_breakpoint_at(word addr) {
-	word existing_instruction = ptrace_get_instruction(addr);
+void set_breakpoint_at(File_And_Line file_and_line) {
+	ENTRY *entry = find(file_to_file_lines, file_and_line->file_name);
+	if (entry == NULL) {
+		printf("File '%s' doesn't exist \n", file_and_line->file_name);
+		return;
+	}
 
-	// TODO: THIS WILL NEED TO BE CHANGED
+	hash_table file_lines = (hash_table)entry->data;
+	char *line_num_key = long_to_hash_key(file_and_line->line_number);
+	printf("Line key: %s \n", line_num_key);
+	entry = find(file_lines, line_num_key);
+	if (entry == NULL) {
+		printf("Cannot set a breakpoint at line %lli of %s\n",
+			   file_and_line->line_number, file_and_line->file_name);
+		return;
+	}
+	word *addr = (word *)entry->data;
+	set_breakpoint_at_address(*addr);
+}
+
+void set_breakpoint_at_address(word addr) {
+	word existing_instruction = ptrace_get_instruction(addr);
+	// TODO: THESE WILL NEED TO BE CHANGED
+	breakpoint_addr = addr;
 	original_instruction = existing_instruction;
 
 	word int_3_op = (existing_instruction & 0xFFFFFFFFFFFFFF00) | 0xCC;
@@ -38,7 +58,7 @@ void breakpoint_continue() {
 	}
 
 	// 4) Put breakpoint instruction back
-	set_breakpoint_at(breakpoint_addr);
+	set_breakpoint_at_address(breakpoint_addr);
 
 	// 5) run
 	ptrace_run();
@@ -49,7 +69,7 @@ void set_breakpoint_from_start() {
 	// breakpoint_addr = registers->rip + 3604;
 	// breakpoint_addr = registers->rip + 0x00000624;
 	breakpoint_addr = registers->rip + 1670;
-	set_breakpoint_at(breakpoint_addr);
+	set_breakpoint_at_address(breakpoint_addr);
 	free(registers);
 }
 
