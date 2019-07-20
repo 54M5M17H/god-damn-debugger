@@ -6,8 +6,29 @@
 #include <sys/user.h>
 #include <sys/wait.h>
 
-word original_instruction;
-word breakpoint_addr;
+hash_table breakpoint_instruction_store;
+
+void init_breakpoint_store() {
+	breakpoint_instruction_store = init_hash(breakpoint_instruction_store);
+}
+
+void store_breakpoint(word addr, word instruction) {
+	word *persistent_instruction = malloc(sizeof(word));
+	*persistent_instruction = instruction;
+	char *addr_hash = long_to_hash_key(addr);
+	insert(breakpoint_instruction_store, addr_hash, persistent_instruction);
+}
+
+word *retrieve_breakpoint_instruction(word addr) {
+	char *addr_hash = long_to_hash_key(addr);
+	ENTRY *entry = find(breakpoint_instruction_store, addr_hash);
+	if (entry == NULL) {
+		printf("No breakpoint found here \n");
+		return NULL;
+	}
+	word *original_instruction = (word *)entry->data;
+	return original_instruction;
+}
 
 void set_breakpoint_at(File_And_Line file_and_line) {
 	ENTRY *entry = find(file_to_file_lines, file_and_line->file_name);
@@ -18,7 +39,6 @@ void set_breakpoint_at(File_And_Line file_and_line) {
 
 	hash_table file_lines = (hash_table)entry->data;
 	char *line_num_key = long_to_hash_key(file_and_line->line_number);
-	printf("Line key: %s \n", line_num_key);
 	entry = find(file_lines, line_num_key);
 	if (entry == NULL) {
 		printf("Cannot set a breakpoint at line %lli of %s\n",
@@ -31,25 +51,31 @@ void set_breakpoint_at(File_And_Line file_and_line) {
 
 void set_breakpoint_at_address(word addr) {
 	word existing_instruction = ptrace_get_instruction(addr);
-	// TODO: THESE WILL NEED TO BE CHANGED
-	breakpoint_addr = addr;
-	original_instruction = existing_instruction;
+	store_breakpoint(addr, existing_instruction);
 
 	word int_3_op = (existing_instruction & 0xFFFFFFFFFFFFFF00) | 0xCC;
-	ptrace_set_instruction(breakpoint_addr, int_3_op);
+	ptrace_set_instruction(addr, int_3_op);
 	return;
 }
 
 void breakpoint_continue() {
-	// TODO: LOGIC TO FIGURE OUT WHERE WE ARE, WHICH BREAKPOINT, ORIGINAL INSTRUCTION
+	// 1) find out where we are
+	registers_struct *registers = ptrace_get_registers();
+	word current_addr = registers->rip - 1;
 
-	// 1) put back original instruction
-	ptrace_set_instruction(breakpoint_addr, original_instruction);
+	// 2) find original instruction
+	word *original_instruction = retrieve_breakpoint_instruction(current_addr);
+	if (original_instruction == NULL) {
+		return;
+	}
 
-	// 2) step back
+	// 3) put back original instruction
+	ptrace_set_instruction(current_addr, *original_instruction);
+
+	// 4) step back
 	ptrace_step_back();
 
-	// 3) Step forward
+	// 5) Step forward
 	ptrace_step_forward();
 	int status;
 	waitpid(child_pid, &status, 0);
@@ -57,107 +83,18 @@ void breakpoint_continue() {
 		exit(0);
 	}
 
-	// 4) Put breakpoint instruction back
-	set_breakpoint_at_address(breakpoint_addr);
+	// 6) Put breakpoint instruction back
+	set_breakpoint_at_address(current_addr);
 
-	// 5) run
-	ptrace_run();
-}
+	// 7) run
+	ptrace_resume();
 
-void set_breakpoint_from_start() {
-	registers_struct *registers = ptrace_get_registers();
-	// breakpoint_addr = registers->rip + 3604;
-	// breakpoint_addr = registers->rip + 0x00000624;
-	breakpoint_addr = registers->rip + 1670;
-	set_breakpoint_at_address(breakpoint_addr);
 	free(registers);
 }
 
 // open question: how to record breakpoints
-
-// int set_breakpoint() {
-
-// 	struct user_regs_struct registers;
-// 	int res = ptrace(PTRACE_GETREGS, child_pid, NULL, &registers);
-// 	if (res == -1) {
-// 		perror("Fetch regs");
-// 	}
-
-// 	long long unsigned int instr = ptrace(PTRACE_PEEKTEXT, child_pid, registers.rip, 0);
-// 	if (instr == -1) {
-// 		perror("Fetch instr");
-// 	}
-// 	printf("RIP = 0x%08llx.  instr = 0x%08llx\n", registers.rip, instr);
-
-// 	long long unsigned int breakpoint_addr = registers.rip + 3604;
-// 	original_instruction = ptrace(PTRACE_PEEKTEXT, child_pid, (void *)breakpoint_addr, 0);
-// 	if (original_instruction == -1) {
-// 		perror("PEEK");
-// 	}
-// 	printf("Original data at 0x%08llx: 0x%08llx\n", breakpoint_addr, original_instruction);
-
-// 	long long unsigned int int_3_op = (original_instruction & 0xFFFFFF00) | 0xCC;
-// 	res = ptrace(PTRACE_POKETEXT, child_pid, (void *)breakpoint_addr, (void *)int_3_op);
-// 	if (res == -1) {
-// 		perror("Adding bp");
-// 	}
-// 	printf("breakpoint added \n");
-
-// 	long long unsigned int new_instruction = ptrace(PTRACE_PEEKTEXT, child_pid, (void *)breakpoint_addr, 0);
-// 	if (new_instruction == -1) {
-// 		perror("PEEK");
-// 	}
-// 	printf("Current data at 0x%08llx: 0x%08llx\n", breakpoint_addr, new_instruction);
-// }
-
-// void resumeeeee_from_breakpoint() {
-// 	printf("Resuming...\n");
-
-// 	// replace instruction -- we might want to keep breakpoint there though
-// 	int res = ptrace(PTRACE_POKETEXT, child_pid, breakpoint_addr, original_instruction);
-// 	if (res == -1) {
-// 		perror("Replace");
-// 	}
-
-// 	// back up one instruction
-// 	registers_struct registers;
-// 	res = ptrace(PTRACE_GETREGS, child_pid, 0, &registers);
-// 	if (res == -1) {
-// 		perror("Get registers");
-// 	}
-
-// 	registers.rip--;
-
-// 	res = ptrace(PTRACE_SETREGS, child_pid, 0, &registers);
-// 	if (res == -1) {
-// 		perror("Backup");
-// 	}
-
-// 	one_step();
-
-// 	// set_breakpoint();
-// 	breakpoint_continue();
-// }
-
-// void one_step() {
-// 	if (ptrace(PTRACE_SINGLESTEP, child_pid, 0, 0) < 0) {
-// 		perror("step");
-// 	}
-// }
-
-// void breakpoint_data() {
-// 	struct user_regs_struct registers;
-// 	int res = ptrace(PTRACE_GETREGS, child_pid, NULL, &registers);
-// 	if (res == -1) {
-// 		perror("Fetch regs");
-// 	}
-
-// 	word instr = ptrace(PTRACE_PEEKTEXT, child_pid, registers.rip, 0);
-// 	if (instr == -1) {
-// 		perror("Fetch instr");
-// 	}
-// 	printf("RIP = 0x%08llx.  instr = 0x%08llx\n", registers.rip, instr);
-// }
+// requirements:
+// address -> instruction
 
 /**
  * struct user_regs_struct

@@ -8,3 +8,4 @@ int main() {
 	printf("answer is %i\n", res);
 	return 0;
 }
+// TODO: test a loop

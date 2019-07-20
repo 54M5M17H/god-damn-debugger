@@ -49,12 +49,13 @@ word my_atoi(char *str, int len);
 void print_word(char *label, word to_print);
 
 // breakpoint.c
-void set_breakpoint_from_start();
+void init_breakpoint_store();
+void set_breakpoint_at(File_And_Line file_and_line);
 void breakpoint_continue();
 void set_breakpoint_at_address(word addr);
 
 // ptrace_utils.c
-int ptrace_run();
+int ptrace_resume();
 int ptrace_set_instruction(word address, word instruction);
 int ptrace_step_back();
 int ptrace_step_forward();

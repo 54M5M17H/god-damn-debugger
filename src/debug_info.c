@@ -259,17 +259,29 @@ void dwarf_test() {
 	char *addr_key = l64a(addr + 2);
 
 	ENTRY *found = find(address_to_file_and_line, addr_key);
+	if (found == NULL) {
+		printf("Could't find address 0x00400b5c -- test failed. \n");
+		exit(0);
+	}
 	File_And_Line data = (File_And_Line)found->data;
 	printf("FileName: %s, lineNum: %08lld \n", data->file_name, data->line_number);
 
-	printf("What address is line 2 of adder.c? \n");
+	printf("What address is line 4 of adder.c? \n");
 	found = find(file_to_file_lines, "adder.c");
+	if (found == NULL) {
+		printf("Could't find file adder.c -- test failed. \n");
+		exit(0);
+	}
 	hash_table line_to_addr = (hash_table)found->data;
 
-	Dwarf_Unsigned line_num = 2;
+	Dwarf_Unsigned line_num = 4;
 	char *line_key = l64a(line_num + 2);
 
 	found = find(line_to_addr, line_key);
+	if (found == NULL) {
+		printf("Could't find line 4 -- test failed. \n");
+		exit(0);
+	}
 	Dwarf_Addr *found_addr = (Dwarf_Addr *)found->data;
-	printf("Adder.c line 2 is at address 0x%08llx \n", *found_addr);
+	printf("Adder.c line 4 is at address 0x%08llx \n", *found_addr);
 }

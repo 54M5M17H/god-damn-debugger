@@ -6,7 +6,7 @@
 // handle here or with user
 // always exit ??
 
-int ptrace_run() {
+int ptrace_resume() {
 	int res = ptrace(PTRACE_CONT, child_pid, NULL, NULL);
 	if (res == -1) {
 		perror("Continue");
@@ -15,8 +15,6 @@ int ptrace_run() {
 }
 
 int ptrace_set_instruction(word address, word instruction) {
-	// replace instruction at address
-	// int res = ptrace(PTRACE_POKETEXT, child_pid, (void *)0x00400b5c, (void *)instruction);
 	int res = ptrace(PTRACE_POKETEXT, child_pid, (void *)address, (void *)instruction);
 	if (res == -1) {
 		perror("Setting instruction");
@@ -25,10 +23,7 @@ int ptrace_set_instruction(word address, word instruction) {
 }
 
 word ptrace_get_instruction(word address) {
-	// print_word("address to get", address);
-	// ptrace_print_ip_reg();
 	word res = ptrace(PTRACE_PEEKTEXT, child_pid, (void *)address, 0);
-	// word res = ptrace(PTRACE_PEEKTEXT, child_pid, (void *)0x00400b5c, (void *)0);
 	if (res == -1) {
 		perror("Peeking instruction");
 	}

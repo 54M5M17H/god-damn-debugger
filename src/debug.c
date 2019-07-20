@@ -17,6 +17,7 @@ char *command;
 
 int start_debugger() {
 	command = malloc(sizeof(char) * MAX_INSTRUCTION_LEN);
+	init_breakpoint_store();
 	int status;
 	int res;
 
@@ -54,20 +55,20 @@ void handle_pause() {
 			return handle_pause();
 		}
 		STARTED = true;
-		ptrace_run();
+		ptrace_resume();
 		return;
 	}
 
 	if (strcmp(command, "c") == 0) {
 		if (STARTED == false) {
 			STARTED = true;
-			ptrace_run();
+			ptrace_resume();
 			return;
 		}
 
 		// if (!ON_A_BREAKPOINT) {
 		// TODO: COULD HAVE JUST STEPPED HERE, NO BPOINT
-		// ptrace_run();
+		// ptrace_resume();
 		// return;
 		// }
 
