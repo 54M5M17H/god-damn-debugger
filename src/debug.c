@@ -66,11 +66,7 @@ void handle_pause() {
 			return;
 		}
 
-		// if (!ON_A_BREAKPOINT) {
 		// TODO: COULD HAVE JUST STEPPED HERE, NO BPOINT
-		// ptrace_resume();
-		// return;
-		// }
 
 		breakpoint_continue();
 		return;

@@ -6,6 +6,11 @@
 #include <sys/user.h>
 #include <sys/wait.h>
 
+typedef struct current_position_info {
+	word addr;
+	word instruction;
+} * Current_Position_Info;
+
 hash_table breakpoint_instruction_store;
 
 void init_breakpoint_store() {
@@ -23,7 +28,6 @@ word *retrieve_breakpoint_instruction(word addr) {
 	char *addr_hash = long_to_hash_key(addr);
 	ENTRY *entry = find(breakpoint_instruction_store, addr_hash);
 	if (entry == NULL) {
-		printf("No breakpoint found here \n");
 		return NULL;
 	}
 	word *original_instruction = (word *)entry->data;
@@ -58,21 +62,26 @@ void set_breakpoint_at_address(word addr) {
 	return;
 }
 
-void breakpoint_continue() {
-	// 1) find out where we are
+Current_Position_Info get_current_position_info() {
 	registers_struct *registers = ptrace_get_registers();
 	word current_addr = registers->rip - 1;
-
-	// 2) find original instruction
 	word *original_instruction = retrieve_breakpoint_instruction(current_addr);
+	Current_Position_Info current_position = malloc(sizeof(struct current_position_info));
+	current_position->addr = current_addr;
+
 	if (original_instruction == NULL) {
-		return;
+		current_position->instruction = 0;
+	} else {
+		current_position->instruction = *original_instruction;
 	}
+	return current_position;
+}
 
-	// 3) put back original instruction
-	ptrace_set_instruction(current_addr, *original_instruction);
+void step_over_breakpoint(Current_Position_Info current_position) {
+	// put back original instruction
+	ptrace_set_instruction(current_position->addr, current_position->instruction);
 
-	// 4) step back
+	// step back
 	ptrace_step_back();
 
 	// 5) Step forward
@@ -84,12 +93,18 @@ void breakpoint_continue() {
 	}
 
 	// 6) Put breakpoint instruction back
-	set_breakpoint_at_address(current_addr);
+	set_breakpoint_at_address(current_position->addr);
+}
 
-	// 7) run
+void breakpoint_continue() {
+	// may not be at a breakpoint -- ie stepped here
+	Current_Position_Info current_position = get_current_position_info();
+
+	if (current_position->instruction != 0) {
+		step_over_breakpoint(current_position);
+	}
+
 	ptrace_resume();
-
-	free(registers);
 }
 
 // open question: how to record breakpoints

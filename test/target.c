@@ -6,6 +6,7 @@ int main() {
 	int e = adder(3, 4);
 	int res = e * mult;
 	printf("answer is %i\n", res);
+
 	return 0;
 }
 // TODO: test a loop
